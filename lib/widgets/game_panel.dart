@@ -24,7 +24,6 @@ class _GamePanelState extends State<GamePanel> with TickerProviderStateMixin {
   Move currentMovement = Move.right;
   late final AnimationController controllerMovements;
   late Animation<double> animationMovements;
-  bool hasPyramid = false;
   int biggerLvl = 1;
 
   late List<({FigureInfo figure, int availableMovement})> availableSpace = [];
@@ -45,6 +44,7 @@ class _GamePanelState extends State<GamePanel> with TickerProviderStateMixin {
   ({int rowIndex, int columnIndex, int steps}) comboPossition =
       (rowIndex: 0, columnIndex: 0, steps: 0);
 
+  
   @override
   void initState() {
     super.initState();
@@ -160,89 +160,20 @@ class _GamePanelState extends State<GamePanel> with TickerProviderStateMixin {
       });
   }
 
-  bool get isFullMatrix =>
-      figuresPossitions.length >= heightDimension * widthDimension;
-
+  
+  
   @override
   void dispose() {
     controllerMovements.dispose();
     super.dispose();
   }
 
-  int calculateBiggerLevel() {
-    int bigger = 1;
-    for (int i = 0; i < figuresPossitions.length; i++) {
-      if (bigger < figuresPossitions[i].lvl) {
-        bigger = figuresPossitions[i].lvl;
-      }
-    }
-    return bigger;
-  }
+  
 
-  int upgradeLevel(int lvl1, int lvl2) {
-    if (lvl1 + lvl2 < -1) {
-      // Son piramides?
-      return lvl1 == lvl2 ? -1 : -2;
-    } else {
-      if (lvl1 == lvl2) {
-        return lvl1 + 1;
-      }
-      // Hay una priamide
-      int degrade = (lvl1.abs() + lvl2.abs()) - 3 > 0
-          ? (lvl1.abs() + lvl2.abs()) - 3
-          : 1; // Evitar desnivelar a 0;
-      return (lvl1 == -1 || lvl2 == -1) ? lvl1.abs() + lvl2.abs() : degrade;
-    }
-  }
+  
 
-  void _addNewFigure() async {
-    bool areEqual = true;
-    if (lastState.length == figuresPossitions.length) {
-      for (int i = 0; i < lastState.length; i++) {
-        if (lastState[i] != figuresPossitions[i]) {
-          areEqual = false;
-          break;
-        }
-      }
-    } else {
-      areEqual = false;
-    }
-    if (!areEqual) {
-      // Adding a new figure in the canvas
-      if (!isFullMatrix) {
-        __addfigure();
-      }
-      // Another figure
-      if (!isFullMatrix && Random().nextInt(100) < 15) {
-        __addfigure();
-      }
-    }
+  
 
-    lastState = figuresPossitions.map((e) => e.copyWidth()).toList();
-  }
-
-  void __addfigure() {
-    int rm = Random().nextInt(200);
-    int lvl = 1;
-    if (rm < 5) {
-      if (rm <= 1) {
-        lvl = -1;
-      } else {
-        lvl = -2;
-      }
-    } else if (rm < 40) {
-      lvl = 2;
-    }
-
-    ({int rowIndex, int columnIndex}) poss = _getNewPoss();
-    figuresPossitions.add(FigureInfo(
-      id: ++serialId,
-      rowIndex: poss.rowIndex,
-      columnIndex: poss.columnIndex,
-      steps: 0,
-      lvl: lvl,
-    ));
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -251,228 +182,83 @@ class _GamePanelState extends State<GamePanel> with TickerProviderStateMixin {
       double paddingBottom = 50;
 
       gridWidth = (constrains.maxWidth - (50)) ~/ widthDimension + 0.0;
-      gridHeight = (constrains.maxHeight - (paddingTop + paddingBottom)) ~/
-              heightDimension +
-          0.0;
+      gridHeight = (constrains.maxHeight - (paddingTop + paddingBottom)) ~/ heightDimension + 0.0;
 
       return Stack(
         children: [
-          Column(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onVerticalDragEnd: (details) {
-                    // Swiping in up direction.
-                    if (details.velocity.pixelsPerSecond.dy > 0) {
-                      if (!_isTransicion()) {
-                        _calculateSpace(Move.down);
-                        currentMovement = Move.down;
-                        controllerMovements
-                          ..reset()
-                          ..forward();
-                      }
-                    }
-                    if (details.velocity.pixelsPerSecond.dy < 0) {
-                      if (!_isTransicion()) {
-                        _calculateSpace(Move.up);
-                        currentMovement = Move.up;
-                        controllerMovements
-                          ..reset()
-                          ..forward();
-                      }
-                    }
-                  },
-                  onHorizontalDragEnd: (details) {
-                    // Swiping in right direction.
-                    if (details.velocity.pixelsPerSecond.dx > 0) {
-                      if (!_isTransicion()) {
-                        _calculateSpace(Move.right);
-                        currentMovement = Move.right;
-                        controllerMovements
-                          ..reset()
-                          ..forward();
-                      }
-                    }
-                    // Swiping in left direction.
-                    if (details.velocity.pixelsPerSecond.dx < 0) {
-                      if (!_isTransicion()) {
-                        _calculateSpace(Move.left);
-                        currentMovement = Move.left;
-                        controllerMovements
-                          ..reset()
-                          ..forward();
-                      }
-                    }
-                  },
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+          Container(
+            child: GestureDetector(
+              onVerticalDragEnd: (details) {
+                // Swiping in up direction.
+                if (details.velocity.pixelsPerSecond.dy > 0) {
+                  if (!_isTransicion()) {
+                    _calculateSpace(Move.down);
+                    currentMovement = Move.down;
+                    controllerMovements
+                      ..reset()
+                      ..forward();
+                  }
+                }
+                if (details.velocity.pixelsPerSecond.dy < 0) {
+                  if (!_isTransicion()) {
+                    _calculateSpace(Move.up);
+                    currentMovement = Move.up;
+                    controllerMovements
+                      ..reset()
+                      ..forward();
+                  }
+                }
+              },
+              onHorizontalDragEnd: (details) {
+                // Swiping in right direction.
+                if (details.velocity.pixelsPerSecond.dx > 0) {
+                  if (!_isTransicion()) {
+                    _calculateSpace(Move.right);
+                    currentMovement = Move.right;
+                    controllerMovements
+                      ..reset()
+                      ..forward();
+                  }
+                }
+                // Swiping in left direction.
+                if (details.velocity.pixelsPerSecond.dx < 0) {
+                  if (!_isTransicion()) {
+                    _calculateSpace(Move.left);
+                    currentMovement = Move.left;
+                    controllerMovements
+                      ..reset()
+                      ..forward();
+                  }
+                }
+              },
+              child: Center(
+                child: SizedBox(
+                  width: widthDimension * gridWidth,
+                  height: heightDimension * gridHeight,
+                  child: Stack(
                     children: [
                       Container(
-                        height: 50,
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 30),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              flex: 1,
-                              child: Container(
-                                alignment: Alignment.centerRight,
-                                child: IconButton(
-                                    onPressed: () {
-                                      showDialog(
-                                          context: context,
-                                          builder: (context) => AlertDialog(
-                                                contentPadding: EdgeInsets.zero,
-                                                actionsAlignment:
-                                                    MainAxisAlignment.center,
-                                                backgroundColor: acent,
-                                                title: const Text(
-                                                  'Are you sure you want to restart the game?',
-                                                  style: TextStyle(
-                                                      color: primary,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 18),
-                                                ),
-                                                actions: [
-                                                  TextButton(
-                                                      onPressed: () {
-                                                        Navigator.pop(context);
-                                                      },
-                                                      child: const Text(
-                                                        'No',
-                                                        style: TextStyle(
-                                                            color:
-                                                                Colors.white),
-                                                      )),
-                                                  const SizedBox(
-                                                    width: 35,
-                                                  ),
-                                                  TextButton(
-                                                      onPressed: () {
-                                                        Navigator.pop(context);
-                                                        figuresPossitions = [];
-                                                        controllerMovements
-                                                          ..reset()
-                                                          ..forward();
-                                                      },
-                                                      child: const Text(
-                                                        'Yes',
-                                                        style: TextStyle(
-                                                            color:
-                                                                Colors.white),
-                                                      ))
-                                                ],
-                                                // content: Container(),
-                                              ));
-                                    },
-                                    icon: const Icon(
-                                      Icons.change_circle_rounded,
-                                      size: 35,
-                                      color: acent,
-                                    )),
-                              ),
-                            )
-                          ],
-                        ),
+                        height: double.infinity,
+                        color: Colors.black26,
                       ),
-                      Center(
-                        child: SizedBox(
-                          width: widthDimension * gridWidth,
-                          height: heightDimension * gridHeight,
-                          child: Stack(
-                            children: [
-                              Container(
-                                width: double.infinity,
-                                height: double.infinity,
-                                decoration: BoxDecoration(
-                                    // color: darkenColor(acent, 0.8),
-                                    borderRadius: BorderRadius.circular(5)),
-                              ),
-                              Stack(
-                                children: List.generate(
-                                  heightDimension,
-                                  (rowIndex) => Positioned(
-                                    top: rowIndex * gridHeight,
-                                    child: Row(
-                                      children: List.generate(
-                                        widthDimension,
-                                        (columnIndex) => Container(
-                                          width: gridWidth,
-                                          height: gridHeight,
-                                          alignment: Alignment.center,
-                                          child: Container(
-                                            width: gridWidth - 10,
-                                            height: gridHeight - 10,
-                                            decoration: const BoxDecoration(
-                                                // color: primary,
-                                                borderRadius: BorderRadius.all(
-                                                    Radius.circular(5))),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                // children: List.generate(
-                                //     widthDimension,
-                                //     (index) => Positioned(
-                                //         left: index * gridWidth,
-                                //         child: Container(
-                                //           width: gridWidth,
-                                //           height: gridHeight,
-                                //           alignment: Alignment.center,
-                                //           child: Container(
-                                //             width: gridWidth - 10,
-                                //             height: gridHeight - 10,
-                                //             color: Colors.blue,
-                                //           ),
-                                //         ))),
-                              ),
-                              Stack(
-                                children: figuresPossitions
-                                    .map((FigureInfo figure) =>
-                                        _buildFigureWithPossition(figure))
-                                    .toList(),
-                              ),
-                              ...[
-                                isFinish
-                                    ? Container(
-                                        decoration: BoxDecoration(
-                                            color: Colors.black26,
-                                            borderRadius:
-                                                BorderRadius.circular(5)),
-                                        alignment: Alignment.center,
-                                        child: ElevatedButton(
-                                          child: const Text(
-                                            'Try again!',
-                                            style: TextStyle(
-                                                color: textBody,
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.bold),
-                                          ),
-                                          onPressed: () {
-                                            isFinish = false;
-                                            figuresPossitions = [];
-                                            controllerMovements
-                                              ..reset()
-                                              ..forward();
-                                          },
-                                        ),
-                                      )
-                                    : const SizedBox()
-                              ],
-                            ],
-                          ),
-                        ),
+                      Stack(
+                        children: figuresPossitions
+                            .map((FigureInfo figure) =>
+                                _buildFigureWithPossition(figure))
+                            .toList(),
                       ),
+                      ...[
+                        isFinish
+                            ? _buildGameOver()
+                            : const SizedBox()
+                      ],
                     ],
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          )
         ],
       );
     });
@@ -519,9 +305,29 @@ class _GamePanelState extends State<GamePanel> with TickerProviderStateMixin {
     );
   }
 
-  bool _isTransicion() =>
-      (animationMovements.value > 0 && animationMovements.value < 1 ||
-          isFinish);
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   void _calculateSpace(Move move) {
     List<({FigureInfo figure, int availableMovement})> available = [];
@@ -548,11 +354,10 @@ class _GamePanelState extends State<GamePanel> with TickerProviderStateMixin {
     }
   }
 
-  List<({FigureInfo figure, int availableMovement})>
-      _calculateAvailabilityTop() {
+  // Up movement
+  List<({FigureInfo figure, int availableMovement})> _calculateAvailabilityTop() {
     // Calculate and represent the current positions of figures in a two-dimensional array
-    Map<int, Map<int, FigureInfo?>> arrayIndexPoss =
-        _initializaedArrayWithCurrentsPossitions();
+    Map<int, Map<int, FigureInfo?>> arrayIndexPoss = _initializaedArrayWithCurrentsPossitions();
     List<({FigureInfo figure, int availableMovement})> available = [];
 
     for (int column = 0; column < widthDimension; column++) {
@@ -567,10 +372,7 @@ class _GamePanelState extends State<GamePanel> with TickerProviderStateMixin {
             (availableInColumn.isNotEmpty) &&
             (availableInColumn.last.figure.id !=
                 arrayIndexPoss[row]![column]!.id) &&
-            (availableInColumn.last.figure.lvl ==
-                    arrayIndexPoss[row]![column]!.lvl ||
-                _pyramidRestroid(
-                    availableInColumn, arrayIndexPoss, row, column))) {
+            _pyramidRestroid(availableInColumn.last.figure.lvl, arrayIndexPoss[row]![column]!.lvl, row, column)) {
           availableMovement++;
           combined = true;
 
@@ -592,12 +394,10 @@ class _GamePanelState extends State<GamePanel> with TickerProviderStateMixin {
 
     return available;
   }
-
-  List<({FigureInfo figure, int availableMovement})>
-      _calculateAvailabilityDown() {
+  // Down movement
+  List<({FigureInfo figure, int availableMovement})> _calculateAvailabilityDown() {
     // Calculate and represent the current positions of figures in a two-dimensional array
-    Map<int, Map<int, FigureInfo?>> arrayIndexPoss =
-        _initializaedArrayWithCurrentsPossitions();
+    Map<int, Map<int, FigureInfo?>> arrayIndexPoss = _initializaedArrayWithCurrentsPossitions();
     List<({FigureInfo figure, int availableMovement})> available = [];
 
     for (int column = 0; column < widthDimension; column++) {
@@ -610,12 +410,8 @@ class _GamePanelState extends State<GamePanel> with TickerProviderStateMixin {
           availableMovement++;
         } else if ((!combined) &&
             (availableInColumn.isNotEmpty) &&
-            (availableInColumn.last.figure.id !=
-                arrayIndexPoss[row]![column]!.id) &&
-            (availableInColumn.last.figure.lvl ==
-                    arrayIndexPoss[row]![column]!.lvl ||
-                _pyramidRestroid(
-                    availableInColumn, arrayIndexPoss, row, column))) {
+            (availableInColumn.last.figure.id != arrayIndexPoss[row]![column]!.id) &&
+              _pyramidRestroid(availableInColumn.last.figure.lvl, arrayIndexPoss[row]![column]!.lvl, row, column)) {
           availableMovement++;
           combined = true;
 
@@ -637,7 +433,7 @@ class _GamePanelState extends State<GamePanel> with TickerProviderStateMixin {
 
     return available;
   }
-
+  // Right movement
   List<({FigureInfo figure, int availableMovement})>
       _calculateAvailabilityRight() {
     // Calculate and represent the current positions of figures in a two-dimensional array
@@ -655,12 +451,8 @@ class _GamePanelState extends State<GamePanel> with TickerProviderStateMixin {
           availableMovement++;
         } else if ((!combined) &&
             (availableInRow.isNotEmpty) &&
-            (availableInRow.last.figure.id !=
-                arrayIndexPoss[row]![column]!.id) &&
-            (availableInRow.last.figure.lvl ==
-                    arrayIndexPoss[row]![column]!.lvl ||
-                _pyramidRestroid(
-                    availableInRow, arrayIndexPoss, row, column))) {
+            (availableInRow.last.figure.id != arrayIndexPoss[row]![column]!.id) &&
+            _pyramidRestroid(availableInRow.last.figure.lvl, arrayIndexPoss[row]![column]!.lvl, row, column)) {
           availableMovement++;
           combined = true;
 
@@ -682,7 +474,7 @@ class _GamePanelState extends State<GamePanel> with TickerProviderStateMixin {
 
     return available;
   }
-
+  // Left movement
   List<({FigureInfo figure, int availableMovement})>
       _calculateAvailabilityLeft() {
     // Calculate and represent the current positions of figures in a two-dimensional array
@@ -700,12 +492,8 @@ class _GamePanelState extends State<GamePanel> with TickerProviderStateMixin {
           availableMovement++;
         } else if ((!combined) &&
             (availableInRow.isNotEmpty) &&
-            (availableInRow.last.figure.id !=
-                arrayIndexPoss[row]![column]!.id) &&
-            (availableInRow.last.figure.lvl ==
-                    arrayIndexPoss[row]![column]!.lvl ||
-                _pyramidRestroid(
-                    availableInRow, arrayIndexPoss, row, column))) {
+            (availableInRow.last.figure.id != arrayIndexPoss[row]![column]!.id) &&
+            _pyramidRestroid(availableInRow.last.figure.lvl, arrayIndexPoss[row]![column]!.lvl, row, column)) {
           availableMovement++;
           combined = true;
 
@@ -728,25 +516,18 @@ class _GamePanelState extends State<GamePanel> with TickerProviderStateMixin {
     return available;
   }
 
-  bool _pyramidRestroid(
-      List<({int availableMovement, FigureInfo figure})> availableInColumn,
-      Map<int, Map<int, FigureInfo?>> arrayIndexPoss,
-      int row,
-      int column) {
-    // figuras a convinar si son priamides ambas o solo una de ellas lo es. Dependiendo de su carga, aumentara o disminuira.
-    int figure1Level = availableInColumn.last.figure.lvl;
-    int figure2Level = arrayIndexPoss[row]![column]!.lvl;
 
-    bool check = false;
-    if ((figure1Level < 0 && figure2Level == biggerLvl) ||
-        (figure2Level < 0 && figure1Level == biggerLvl)) {
-      check = true;
-    } else if (figure1Level < 0 && figure2Level < 0) {
-      check = true;
-    }
 
-    return check;
-  }
+
+
+
+
+
+
+
+
+
+
 
   void _refreshFigureWithNewAvailability(
       List<({FigureInfo figure, int availableMovement})> available) {
@@ -761,48 +542,9 @@ class _GamePanelState extends State<GamePanel> with TickerProviderStateMixin {
     figuresPossitions = temp..sort(((a, b) => a.id.compareTo(b.id)));
   }
 
-  Map<int, Map<int, FigureInfo?>> _initializaedArrayWithCurrentsPossitions() {
-    Map<int, Map<int, FigureInfo?>> arrayIndexPoss = {};
+  
 
-    int externalDimension = heightDimension;
-    int internalDimension = widthDimension;
-
-    for (int i = 0; i < externalDimension; i++) {
-      // Initialize de array in -1 values.
-      arrayIndexPoss[i] = {};
-      for (int j = 0; j < internalDimension; j++) {
-        arrayIndexPoss[i]![j] = null;
-      }
-    }
-
-    for (int i = 0; i < figuresPossitions.length; i++) {
-      int indexRow = figuresPossitions[i].rowIndex;
-      int indexColumn = figuresPossitions[i].columnIndex;
-
-      arrayIndexPoss[indexRow]![indexColumn] = figuresPossitions[i];
-    }
-
-    return arrayIndexPoss;
-  }
-
-  ({int rowIndex, int columnIndex}) _getNewPoss() {
-    Map<int, Map<int, FigureInfo?>> arrayIndexPoss =
-        _initializaedArrayWithCurrentsPossitions();
-    List<({int rowIndex, int columnIndex})> freePosition = [];
-
-    for (int i = 0; i < heightDimension; i++) {
-      for (int j = 0; j < widthDimension; j++) {
-        if (arrayIndexPoss[i]![j] == null) {
-          freePosition.add((rowIndex: i, columnIndex: j));
-        }
-      }
-    }
-    int index = Random().nextInt(freePosition.length);
-    return (
-      rowIndex: freePosition[index].rowIndex,
-      columnIndex: freePosition[index].columnIndex
-    );
-  }
+  
 
   void _cleanLevelUp() {
     for (var element in figuresPossitions) {
@@ -831,13 +573,204 @@ class _GamePanelState extends State<GamePanel> with TickerProviderStateMixin {
     return true;
   }
 
-  bool isAvalilableMovement(
-      List<({FigureInfo figure, int availableMovement})> avaliability) {
+  bool isAvalilableMovement(List<({FigureInfo figure, int availableMovement})> avaliability) {
     for (({FigureInfo figure, int availableMovement}) aval in avaliability) {
       if (aval.availableMovement > 0) {
         return true;
       }
     }
     return false;
+  }
+
+  
+  
+
+
+
+  // Refactorized
+
+  bool get isFullMatrix => figuresPossitions.length == heightDimension * widthDimension;
+  bool _isTransicion() => (animationMovements.value > 0 && animationMovements.value < 1 || isFinish);
+
+
+
+  int upgradeLevel(int lvl1, int lvl2) {
+    if (lvl1 <= -1 and lvl2 <= -1) {
+      // Both figures are pyramids
+      return lvl1 == lvl2 ? -1 : -2;
+    } else {
+      if (lvl1 == lvl2) {
+        // Ther aren't pyramids
+        return lvl1 + 1;
+      }
+      
+      // There is a pyramid
+      if (lvl1 == -2 || lvl2 == -2){
+        return lvl1 + lvl2 + 1 > 0 ? lvl1 + lvl2 + 1 : 1;
+      } else {
+        return lvl1.abs() + lvl2.abs();
+      }
+    }
+  }
+  int calculateBiggerLevel() {
+    int bigger = 1;
+    for (int i = 0; i < figuresPossitions.length; i++) {
+      if (bigger < figuresPossitions[i].lvl) {
+        bigger = figuresPossitions[i].lvl;
+      }
+    }
+    return bigger;
+  }
+  bool _pyramidRestroid(int figure1, int figure2, int row, int column) {
+    bool check = false;
+
+    if ( figure1 == figure2) {
+      check = true;
+    } else if (figure1 < 0 && figure2 < 0) {
+      check = true;
+    } else if ((figure1 < 0 && figure2 == biggerLvl) || (figure2 < 0 && figure1 == biggerLvl)) {
+      check = true;
+    }
+
+    return check;
+  }
+
+
+
+
+  Map<int, Map<int, FigureInfo?>> _initializaedArrayWithCurrentsPossitions() {
+    Map<int, Map<int, FigureInfo?>> arrayIndexPoss = {};
+
+    int externalDimension = heightDimension;
+    int internalDimension = widthDimension;
+
+    for (int i = 0; i < externalDimension; i++) {
+      // Initialize de array in -1 values.
+      arrayIndexPoss[i] = {};
+      for (int j = 0; j < internalDimension; j++) {
+        arrayIndexPoss[i]![j] = null;
+      }
+    }
+
+    for (int i = 0; i < figuresPossitions.length; i++) {
+      const int indexRow = figuresPossitions[i].rowIndex;
+      const int indexColumn = figuresPossitions[i].columnIndex;
+
+      arrayIndexPoss[indexRow]![indexColumn] = figuresPossitions[i];
+    }
+
+    return arrayIndexPoss;
+  }
+  ({int rowIndex, int columnIndex}) _getNewPoss() {
+    const Map<int, Map<int, FigureInfo?>> arrayIndexPoss = _initializaedArrayWithCurrentsPossitions();
+    const List<({int rowIndex, int columnIndex})> freePosition = [];
+
+    for (int i = 0; i < heightDimension; i++) {
+      for (int j = 0; j < widthDimension; j++) {
+        if (arrayIndexPoss[i]![j] == null) {
+          freePosition.add((rowIndex: i, columnIndex: j));
+        }
+      }
+    }
+
+    const int index = Random().nextInt(freePosition.length);
+    return (
+      rowIndex: freePosition[index].rowIndex,
+      columnIndex: freePosition[index].columnIndex
+    );
+  }
+
+
+
+  Container _buildGameOver(){
+    return Container(
+      decoration: BoxDecoration(
+          color: Colors.black26,
+          borderRadius:
+              BorderRadius.circular(5)),
+      alignment: Alignment.center,
+      child: ElevatedButton(
+        child: const Text(
+          'Try again!',
+          style: TextStyle(
+              color: textBody,
+              fontSize: 14,
+              fontWeight: FontWeight.bold),
+        ),
+        onPressed: () {
+          isFinish = false;
+          figuresPossitions = [];
+          controllerMovements
+            ..reset()
+            ..forward();
+        },
+      ),
+    )
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  void _addNewFigure() async {
+    bool areEqual = true;
+    if (lastState.length == figuresPossitions.length) {
+      for (int i = 0; i < lastState.length; i++) {
+        if (lastState[i] != figuresPossitions[i]) {
+          areEqual = false;
+          break;
+        }
+      }
+    } else {
+      areEqual = false;
+    }
+
+
+    if (!areEqual) {
+      // Adding a new figure in the canvas
+      if (!isFullMatrix) {
+        __addfigure();
+      }
+      // Another figure
+      if (!isFullMatrix && Random().nextInt(100) < 15) {
+        __addfigure();
+      }
+    }
+
+    lastState = figuresPossitions.map((e) => e.copyWidth()).toList();
+  }
+  void __addfigure() {
+    int rm = Random().nextInt(200);
+    int lvl = 1;
+    if (rm < 5) {
+      if (rm <= 1) {
+        lvl = -1;
+      } else {
+        lvl = -2;
+      }
+    } else if (rm < 40) {
+      lvl = 2;
+    }
+
+    ({int rowIndex, int columnIndex}) poss = _getNewPoss();
+    figuresPossitions.add(FigureInfo(
+      id: ++serialId,
+      rowIndex: poss.rowIndex,
+      columnIndex: poss.columnIndex,
+      steps: 0,
+      lvl: lvl,
+    ));
   }
 }
