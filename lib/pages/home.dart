@@ -50,7 +50,20 @@ class _HomePageState extends State<HomePage> {
                 MainButton(
                   title: 'Play',
                   onPressed: () {
-                    Navigator.pushNamed(context, '/start-game');
+                    Future.delayed(const Duration(seconds: 5), () {
+                      Navigator.pushReplacement(
+                        context,
+                        PageRouteBuilder(
+                          pageBuilder: (context, animation, secondaryAnimation) => const LoadingPage(),
+                          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: child,
+                            );
+                          },
+                        ),
+                      );
+                    });
                   },
                   width: 200,
                 ),

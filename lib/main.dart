@@ -14,10 +14,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Polygon',
-      initialRoute: '/', // Ruta inicial
+      initialRoute: '/',
       routes: {
-        '/': (context) => const HomePage(), // Página de inicio
-        '/start-game': (context) => const GamePage(), // Define la ruta '/start-game'
+        '/': (context) => const HomePage(),
+        'loading-start-game': (context) => const LoadingPage(),
+        '/start-game': (context) => const GamePage(),
       },
       theme: ThemeData(
         useMaterial3: true,
