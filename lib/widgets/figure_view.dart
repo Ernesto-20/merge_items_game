@@ -64,8 +64,8 @@ class _FigureViewState extends State<FigureView> with TickerProviderStateMixin {
 
     controllerSpin = AnimationController(vsync: this, duration: const Duration(seconds: 10),)..repeat();
     animationSpin = Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(parent: controllerSpin,curve: Curves.linear, ),)..addListener(() {
-        setState(() {});
-      });
+      setState(() {});
+    });
 
     controllerLevelUp = AnimationController(
       vsync: this,

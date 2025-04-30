@@ -35,4 +35,8 @@ class FigureInfo extends Equatable {
         steps: steps ?? this.steps,
         lvl: lvl ?? this.lvl);
   }
+
+  bool isAtSamePosition(FigureInfo other) {
+    return rowIndex == other.rowIndex && columnIndex == other.columnIndex;
+  }
 }

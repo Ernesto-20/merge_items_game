@@ -26,10 +26,10 @@ class _GamePanelState extends State<GamePanel> with TickerProviderStateMixin {
   late Animation<double> animationMovements;
   int biggerLvl = 1;
 
-  late List<({FigureInfo figure, int availableMovement})> availableSpace = [];
-
   int serialId = 0;
   late List<FigureInfo> lastState;
+
+  // State of figures
   List<FigureInfo> figuresPossitions = [
     FigureInfo(
       id: 0,
@@ -41,123 +41,25 @@ class _GamePanelState extends State<GamePanel> with TickerProviderStateMixin {
   ];
   int points = 0;
   bool isFinish = false;
-  ({int rowIndex, int columnIndex, int steps}) comboPossition =
-      (rowIndex: 0, columnIndex: 0, steps: 0);
 
+  
+  
+  
+  
   
   @override
   void initState() {
     super.initState();
     lastState = figuresPossitions.map((e) => e.copyWidth()).toList();
-    controllerMovements = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 450));
+    controllerMovements = AnimationController(vsync: this, duration: const Duration(milliseconds: 450));
 
-    animationMovements = Tween<double>(begin: 0, end: 1)
-        .animate(controllerMovements)
-      ..addListener(() {
-        setState(() {
-          if (animationMovements.value == 1) {
-            for (var figure in figuresPossitions) {
-              switch (currentMovement) {
-                case Move.up:
-                  figure.rowIndex -= figure.steps;
-                case Move.right:
-                  figure.columnIndex += figure.steps;
-                case Move.down:
-                  figure.rowIndex += figure.steps;
-                case Move.left:
-                  figure.columnIndex -= figure.steps;
-              }
-            }
-
-            // Combined
-            List<FigureInfo> combinedFigures = [];
-            List<int> indexDuplicated = [];
-            points = 0;
-            for (int i = 0; i < figuresPossitions.length; i++) {
-              bool isCombined = false;
-              for (int j = i + 1; j < figuresPossitions.length; j++) {
-                if ((figuresPossitions[i].rowIndex ==
-                        figuresPossitions[j].rowIndex) &&
-                    (figuresPossitions[i].columnIndex ==
-                        figuresPossitions[j].columnIndex) &&
-                    !(indexDuplicated.contains(j))) {
-                  isCombined = true;
-                  indexDuplicated.add(j);
-                  if (figuresPossitions[i].id > figuresPossitions[j].id) {
-                    int upgrade = upgradeLevel(figuresPossitions[i].lvl,
-                        figuresPossitions[j].lvl); //Subir de nivel o bajar.
-
-                    points += (upgrade > 0) ? upgrade * 10 : 50;
-
-                    (upgrade) * (figuresPossitions[j].lvl == -1 ? 200 : 10);
-
-                    if (figuresPossitions[i].lvl > figuresPossitions[j].lvl) {
-                      combinedFigures.add(figuresPossitions[i]
-                        ..lvl = upgrade
-                        ..id = ++serialId
-                        ..levelUp = true);
-                    } else {
-                      combinedFigures.add(figuresPossitions[i]
-                        ..lvl = upgrade
-                        ..id = ++serialId
-                        ..levelUp = true);
-                    }
-
-                    biggerLvl = biggerLvl < figuresPossitions[i].lvl
-                        ? figuresPossitions[i].lvl
-                        : biggerLvl;
-                  } else {
-                    int upgrade = upgradeLevel(figuresPossitions[i].lvl,
-                        figuresPossitions[j].lvl); //Subir de nivel o bajar.
-
-                    points += (upgrade > 0) ? upgrade * 10 : 50;
-
-                    if (figuresPossitions[i].lvl > figuresPossitions[j].lvl) {
-                      combinedFigures.add(figuresPossitions[j]
-                        ..lvl = upgrade
-                        ..id = ++serialId
-                        ..levelUp = true);
-                    } else {
-                      combinedFigures.add(figuresPossitions[j]
-                        ..lvl = upgrade
-                        ..id = ++serialId
-                        ..levelUp = true);
-                    }
-
-                    biggerLvl = biggerLvl < figuresPossitions[j].lvl
-                        ? figuresPossitions[j].lvl
-                        : biggerLvl;
-                  }
-
-                  break;
-                }
-              }
-              if (!isCombined && !indexDuplicated.contains(i)) {
-                combinedFigures.add(figuresPossitions[i]);
-              }
-            }
-
-            biggerLvl = calculateBiggerLevel();
-
-            figuresPossitions = combinedFigures
-              ..sort((a, b) => a.id.compareTo(b.id));
-
-            if (indexDuplicated.isNotEmpty) {
-              comboPossition = (
-                rowIndex: combinedFigures[0].rowIndex,
-                columnIndex: combinedFigures[0].columnIndex,
-                steps: combinedFigures[0].steps
-              );
-            }
-
-            if (!isFinish) {
-              _addNewFigure();
-              isFinish = isGameOver();
-            }
-          }
-        });
-      });
+    animationMovements = Tween<double>(begin: 0, end: 1).animate(controllerMovements)
+      ..addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        // La animación ha terminado
+        _onAnimationComplete();
+      }
+    });
   }
 
   
@@ -167,12 +69,6 @@ class _GamePanelState extends State<GamePanel> with TickerProviderStateMixin {
     controllerMovements.dispose();
     super.dispose();
   }
-
-  
-
-  
-
-  
 
 
   @override
@@ -189,46 +85,19 @@ class _GamePanelState extends State<GamePanel> with TickerProviderStateMixin {
           Container(
             child: GestureDetector(
               onVerticalDragEnd: (details) {
-                // Swiping in up direction.
-                if (details.velocity.pixelsPerSecond.dy > 0) {
-                  if (!_isTransicion()) {
-                    _calculateSpace(Move.down);
-                    currentMovement = Move.down;
-                    controllerMovements
-                      ..reset()
-                      ..forward();
-                  }
-                }
-                if (details.velocity.pixelsPerSecond.dy < 0) {
-                  if (!_isTransicion()) {
-                    _calculateSpace(Move.up);
-                    currentMovement = Move.up;
-                    controllerMovements
-                      ..reset()
-                      ..forward();
-                  }
+                if (!_isTransicion()) {
+                  Move move = details.velocity.pixelsPerSecond.dy > 0 ? Move.down : Move.up;
+                  currentMovement = move;
+                  _calculateSpace(move);
+                  controllerMovements..reset()..forward();
                 }
               },
               onHorizontalDragEnd: (details) {
-                // Swiping in right direction.
-                if (details.velocity.pixelsPerSecond.dx > 0) {
-                  if (!_isTransicion()) {
-                    _calculateSpace(Move.right);
-                    currentMovement = Move.right;
-                    controllerMovements
-                      ..reset()
-                      ..forward();
-                  }
-                }
-                // Swiping in left direction.
-                if (details.velocity.pixelsPerSecond.dx < 0) {
-                  if (!_isTransicion()) {
-                    _calculateSpace(Move.left);
-                    currentMovement = Move.left;
-                    controllerMovements
-                      ..reset()
-                      ..forward();
-                  }
+                if (!_isTransicion()) {
+                  Move move = details.velocity.pixelsPerSecond.dx > 0 ? Move.right : Move.left;
+                  currentMovement = move;
+                  _calculateSpace(Move.right);
+                  controllerMovements..reset()..forward();
                 }
               },
               child: Center(
@@ -264,38 +133,25 @@ class _GamePanelState extends State<GamePanel> with TickerProviderStateMixin {
     });
   }
 
+
+  // Widgets
   Positioned _buildFigureWithPossition(FigureInfo figure) {
+    double verticalScrolling = figure.rowIndex * gridHeight;
+    if (currentMovement == Move.down)
+      verticalScrolling = gridHeight * (figure.rowIndex + figure.steps * (animationMovements.value == 1 ? 0 : animationMovements.value));
+    else if (currentMovement == Move.up)
+      verticalScrolling = gridHeight * (figure.rowIndex - figure.steps * (animationMovements.value == 1 ? 0 : animationMovements.value));
+
+    double horizontalScrolling = figure.columnIndex * gridWidth;
+    if (currentMovement == Move.right)
+      horizontalScrolling = gridWidth * (figure.columnIndex + figure.steps * (animationMovements.value == 1 ? 0 : animationMovements.value));
+    else if (currentMovement == Move.left)
+      horizontalScrolling = gridWidth * (figure.columnIndex - figure.steps * (animationMovements.value == 1 ? 0 : animationMovements.value));
+
+
     return Positioned(
-      top: (currentMovement == Move.down)
-          ? gridHeight *
-              (figure.rowIndex +
-                  figure.steps *
-                      (animationMovements.value == 1
-                          ? 0
-                          : animationMovements.value))
-          : (currentMovement == Move.up)
-              ? gridHeight *
-                  (figure.rowIndex -
-                      figure.steps *
-                          (animationMovements.value == 1
-                              ? 0
-                              : animationMovements.value))
-              : figure.rowIndex * gridHeight,
-      left: currentMovement == Move.right
-          ? gridWidth *
-              (figure.columnIndex +
-                  figure.steps *
-                      (animationMovements.value == 1
-                          ? 0
-                          : animationMovements.value))
-          : currentMovement == Move.left
-              ? gridWidth *
-                  (figure.columnIndex -
-                      figure.steps *
-                          (animationMovements.value == 1
-                              ? 0
-                              : animationMovements.value))
-              : figure.columnIndex * gridWidth,
+      top: verticalScrolling,
+      left: horizontalScrolling,
       child: FigureView(
         key: ValueKey(figure.id),
         figureInfo: figure,
@@ -304,384 +160,6 @@ class _GamePanelState extends State<GamePanel> with TickerProviderStateMixin {
       ),
     );
   }
-
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  void _calculateSpace(Move move) {
-    List<({FigureInfo figure, int availableMovement})> available = [];
-    _cleanLevelUp();
-    switch (move) {
-      case Move.up:
-        available = _calculateAvailabilityTop();
-        availableSpace = available;
-        _refreshFigureWithNewAvailability(available);
-      case Move.right:
-        available = _calculateAvailabilityRight();
-        availableSpace = available;
-        _refreshFigureWithNewAvailability(available);
-
-      case Move.down:
-        available = _calculateAvailabilityDown();
-        availableSpace = available;
-        _refreshFigureWithNewAvailability(available);
-
-      case Move.left:
-        available = _calculateAvailabilityLeft();
-        availableSpace = available;
-        _refreshFigureWithNewAvailability(available);
-    }
-  }
-
-  // Up movement
-  List<({FigureInfo figure, int availableMovement})> _calculateAvailabilityTop() {
-    // Calculate and represent the current positions of figures in a two-dimensional array
-    Map<int, Map<int, FigureInfo?>> arrayIndexPoss = _initializaedArrayWithCurrentsPossitions();
-    List<({FigureInfo figure, int availableMovement})> available = [];
-
-    for (int column = 0; column < widthDimension; column++) {
-      int availableMovement = 0;
-      List<({FigureInfo figure, int availableMovement})> availableInColumn = [];
-
-      bool combined = false;
-      for (int row = 0; row < heightDimension; row++) {
-        if (arrayIndexPoss[row]![column] == null) {
-          availableMovement++;
-        } else if ((!combined) &&
-            (availableInColumn.isNotEmpty) &&
-            (availableInColumn.last.figure.id !=
-                arrayIndexPoss[row]![column]!.id) &&
-            _pyramidRestroid(availableInColumn.last.figure.lvl, arrayIndexPoss[row]![column]!.lvl, row, column)) {
-          availableMovement++;
-          combined = true;
-
-          availableInColumn.add((
-            figure: arrayIndexPoss[row]![column]!,
-            availableMovement: availableMovement
-          ));
-        } else {
-          combined = false;
-          availableInColumn.add((
-            figure: arrayIndexPoss[row]![column]!,
-            availableMovement: availableMovement
-          ));
-        }
-      }
-
-      available = [...available, ...availableInColumn];
-    }
-
-    return available;
-  }
-  // Down movement
-  List<({FigureInfo figure, int availableMovement})> _calculateAvailabilityDown() {
-    // Calculate and represent the current positions of figures in a two-dimensional array
-    Map<int, Map<int, FigureInfo?>> arrayIndexPoss = _initializaedArrayWithCurrentsPossitions();
-    List<({FigureInfo figure, int availableMovement})> available = [];
-
-    for (int column = 0; column < widthDimension; column++) {
-      int availableMovement = 0;
-      List<({FigureInfo figure, int availableMovement})> availableInColumn = [];
-
-      bool combined = false;
-      for (int row = heightDimension - 1; row >= 0; row--) {
-        if (arrayIndexPoss[row]![column] == null) {
-          availableMovement++;
-        } else if ((!combined) &&
-            (availableInColumn.isNotEmpty) &&
-            (availableInColumn.last.figure.id != arrayIndexPoss[row]![column]!.id) &&
-              _pyramidRestroid(availableInColumn.last.figure.lvl, arrayIndexPoss[row]![column]!.lvl, row, column)) {
-          availableMovement++;
-          combined = true;
-
-          availableInColumn.add((
-            figure: arrayIndexPoss[row]![column]!,
-            availableMovement: availableMovement
-          ));
-        } else {
-          combined = false;
-          availableInColumn.add((
-            figure: arrayIndexPoss[row]![column]!,
-            availableMovement: availableMovement
-          ));
-        }
-      }
-
-      available = [...available, ...availableInColumn];
-    }
-
-    return available;
-  }
-  // Right movement
-  List<({FigureInfo figure, int availableMovement})>
-      _calculateAvailabilityRight() {
-    // Calculate and represent the current positions of figures in a two-dimensional array
-    Map<int, Map<int, FigureInfo?>> arrayIndexPoss =
-        _initializaedArrayWithCurrentsPossitions();
-    List<({FigureInfo figure, int availableMovement})> available = [];
-
-    for (int row = 0; row < heightDimension; row++) {
-      int availableMovement = 0;
-      List<({FigureInfo figure, int availableMovement})> availableInRow = [];
-
-      bool combined = false;
-      for (int column = widthDimension - 1; column >= 0; column--) {
-        if (arrayIndexPoss[row]![column] == null) {
-          availableMovement++;
-        } else if ((!combined) &&
-            (availableInRow.isNotEmpty) &&
-            (availableInRow.last.figure.id != arrayIndexPoss[row]![column]!.id) &&
-            _pyramidRestroid(availableInRow.last.figure.lvl, arrayIndexPoss[row]![column]!.lvl, row, column)) {
-          availableMovement++;
-          combined = true;
-
-          availableInRow.add((
-            figure: arrayIndexPoss[row]![column]!,
-            availableMovement: availableMovement
-          ));
-        } else {
-          combined = false;
-          availableInRow.add((
-            figure: arrayIndexPoss[row]![column]!,
-            availableMovement: availableMovement
-          ));
-        }
-      }
-
-      available = [...available, ...availableInRow];
-    }
-
-    return available;
-  }
-  // Left movement
-  List<({FigureInfo figure, int availableMovement})>
-      _calculateAvailabilityLeft() {
-    // Calculate and represent the current positions of figures in a two-dimensional array
-    Map<int, Map<int, FigureInfo?>> arrayIndexPoss =
-        _initializaedArrayWithCurrentsPossitions();
-    List<({FigureInfo figure, int availableMovement})> available = [];
-
-    for (int row = 0; row < heightDimension; row++) {
-      int availableMovement = 0;
-      List<({FigureInfo figure, int availableMovement})> availableInRow = [];
-
-      bool combined = false;
-      for (int column = 0; column < widthDimension; column++) {
-        if (arrayIndexPoss[row]![column] == null) {
-          availableMovement++;
-        } else if ((!combined) &&
-            (availableInRow.isNotEmpty) &&
-            (availableInRow.last.figure.id != arrayIndexPoss[row]![column]!.id) &&
-            _pyramidRestroid(availableInRow.last.figure.lvl, arrayIndexPoss[row]![column]!.lvl, row, column)) {
-          availableMovement++;
-          combined = true;
-
-          availableInRow.add((
-            figure: arrayIndexPoss[row]![column]!,
-            availableMovement: availableMovement
-          ));
-        } else {
-          combined = false;
-          availableInRow.add((
-            figure: arrayIndexPoss[row]![column]!,
-            availableMovement: availableMovement
-          ));
-        }
-      }
-
-      available = [...available, ...availableInRow];
-    }
-
-    return available;
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  void _refreshFigureWithNewAvailability(
-      List<({FigureInfo figure, int availableMovement})> available) {
-    List<FigureInfo> temp = [];
-
-    for (({FigureInfo figure, int availableMovement}) aval in available) {
-      FigureInfo figure =
-          figuresPossitions.firstWhere((e) => e.id == aval.figure.id);
-      temp.add(figure..steps = aval.availableMovement);
-    }
-
-    figuresPossitions = temp..sort(((a, b) => a.id.compareTo(b.id)));
-  }
-
-  
-
-  
-
-  void _cleanLevelUp() {
-    for (var element in figuresPossitions) {
-      element.levelUp = false;
-    }
-  }
-
-  bool isGameOver() {
-    if (!isFullMatrix) {
-      return false;
-    }
-
-    if (isAvalilableMovement(_calculateAvailabilityTop())) {
-      return false;
-    }
-    if (isAvalilableMovement(_calculateAvailabilityDown())) {
-      return false;
-    }
-    if (isAvalilableMovement(_calculateAvailabilityRight())) {
-      return false;
-    }
-    if (isAvalilableMovement(_calculateAvailabilityLeft())) {
-      return false;
-    }
-
-    return true;
-  }
-
-  bool isAvalilableMovement(List<({FigureInfo figure, int availableMovement})> avaliability) {
-    for (({FigureInfo figure, int availableMovement}) aval in avaliability) {
-      if (aval.availableMovement > 0) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  
-  
-
-
-
-  // Refactorized
-
-  bool get isFullMatrix => figuresPossitions.length == heightDimension * widthDimension;
-  bool _isTransicion() => (animationMovements.value > 0 && animationMovements.value < 1 || isFinish);
-
-
-
-  int upgradeLevel(int lvl1, int lvl2) {
-    if (lvl1 <= -1 and lvl2 <= -1) {
-      // Both figures are pyramids
-      return lvl1 == lvl2 ? -1 : -2;
-    } else {
-      if (lvl1 == lvl2) {
-        // Ther aren't pyramids
-        return lvl1 + 1;
-      }
-      
-      // There is a pyramid
-      if (lvl1 == -2 || lvl2 == -2){
-        return lvl1 + lvl2 + 1 > 0 ? lvl1 + lvl2 + 1 : 1;
-      } else {
-        return lvl1.abs() + lvl2.abs();
-      }
-    }
-  }
-  int calculateBiggerLevel() {
-    int bigger = 1;
-    for (int i = 0; i < figuresPossitions.length; i++) {
-      if (bigger < figuresPossitions[i].lvl) {
-        bigger = figuresPossitions[i].lvl;
-      }
-    }
-    return bigger;
-  }
-  bool _pyramidRestroid(int figure1, int figure2, int row, int column) {
-    bool check = false;
-
-    if ( figure1 == figure2) {
-      check = true;
-    } else if (figure1 < 0 && figure2 < 0) {
-      check = true;
-    } else if ((figure1 < 0 && figure2 == biggerLvl) || (figure2 < 0 && figure1 == biggerLvl)) {
-      check = true;
-    }
-
-    return check;
-  }
-
-
-
-
-  Map<int, Map<int, FigureInfo?>> _initializaedArrayWithCurrentsPossitions() {
-    Map<int, Map<int, FigureInfo?>> arrayIndexPoss = {};
-
-    int externalDimension = heightDimension;
-    int internalDimension = widthDimension;
-
-    for (int i = 0; i < externalDimension; i++) {
-      // Initialize de array in -1 values.
-      arrayIndexPoss[i] = {};
-      for (int j = 0; j < internalDimension; j++) {
-        arrayIndexPoss[i]![j] = null;
-      }
-    }
-
-    for (int i = 0; i < figuresPossitions.length; i++) {
-      const int indexRow = figuresPossitions[i].rowIndex;
-      const int indexColumn = figuresPossitions[i].columnIndex;
-
-      arrayIndexPoss[indexRow]![indexColumn] = figuresPossitions[i];
-    }
-
-    return arrayIndexPoss;
-  }
-  ({int rowIndex, int columnIndex}) _getNewPoss() {
-    const Map<int, Map<int, FigureInfo?>> arrayIndexPoss = _initializaedArrayWithCurrentsPossitions();
-    const List<({int rowIndex, int columnIndex})> freePosition = [];
-
-    for (int i = 0; i < heightDimension; i++) {
-      for (int j = 0; j < widthDimension; j++) {
-        if (arrayIndexPoss[i]![j] == null) {
-          freePosition.add((rowIndex: i, columnIndex: j));
-        }
-      }
-    }
-
-    const int index = Random().nextInt(freePosition.length);
-    return (
-      rowIndex: freePosition[index].rowIndex,
-      columnIndex: freePosition[index].columnIndex
-    );
-  }
-
-
-
   Container _buildGameOver(){
     return Container(
       decoration: BoxDecoration(
@@ -708,69 +186,302 @@ class _GamePanelState extends State<GamePanel> with TickerProviderStateMixin {
     )
   }
 
+  
+  // Calculate movements to scroll through the board 
 
+  void _calculateSpace(Move move) {
+    List<({FigureInfo figure, int availableMovement})> available = [];
+    _cleanLevelUp();
 
+    available = _calculateAvailability(move);
+    _refreshFigureWithNewAvailability(available);
+  }
 
+  List<({FigureInfo figure, int availableMovement})> _calculateAvailability(Move move) {
+    Map<int, Map<int, FigureInfo?>> arrayIndexPoss = _getCurrentMatrix();
+    List<({FigureInfo figure, int availableMovement})> available = [];
 
+    bool isVertical = move == Move.up || move == Move.down;
+    bool isReversed = move == Move.down || move == Move.right;
 
+    int outerLimit = isVertical ? widthDimension : heightDimension;
+    int innerLimit = isVertical ? heightDimension : widthDimension;
 
+    for (int outer = 0; outer < outerLimit; outer++) {
+      int availableMovement = 0;
+      List<({FigureInfo figure, int availableMovement})> availableInLine = [];
+      bool combined = false;
 
+      for (int inner = isReversed ? innerLimit - 1 : 0;
+          isReversed ? inner >= 0 : inner < innerLimit;
+          isReversed ? inner-- : inner++) {
+        int row = isVertical ? inner : outer;
+        int column = isVertical ? outer : inner;
 
+        if (arrayIndexPoss[row]![column] == null) {
+          availableMovement++;
+        } else if ((!combined) &&
+            (availableInLine.isNotEmpty) &&
+            (availableInLine.last.figure.id != arrayIndexPoss[row]![column]!.id) &&
+            _canBeCombined(availableInLine.last.figure.lvl, arrayIndexPoss[row]![column]!.lvl, row, column)) {
+          availableMovement++;
+          combined = true;
 
+          availableInLine.add((
+            figure: arrayIndexPoss[row]![column]!,
+            availableMovement: availableMovement
+          ));
+        } else {
+          combined = false;
+          availableInLine.add((
+            figure: arrayIndexPoss[row]![column]!,
+            availableMovement: availableMovement
+          ));
+        }
+      }
 
+      available = [...available, ...availableInLine];
+    }
 
+    return available;
+  }
 
+  void _refreshFigureWithNewAvailability(List<({FigureInfo figure, int availableMovement})> available) {
+    List<FigureInfo> temp = [];
 
+    for (({FigureInfo figure, int availableMovement}) aval in available) {
+      FigureInfo figure = figuresPossitions.firstWhere((e) => e.id == aval.figure.id);
+      temp.add(figure..steps = aval.availableMovement);
+    }
 
+    figuresPossitions = temp..sort(((a, b) => a.id.compareTo(b.id)));
+  }
 
+  bool _canBeCombined(int figure1, int figure2, int row, int column) {
+    bool check = false;
 
-  void _addNewFigure() async {
-    bool areEqual = true;
-    if (lastState.length == figuresPossitions.length) {
-      for (int i = 0; i < lastState.length; i++) {
-        if (lastState[i] != figuresPossitions[i]) {
-          areEqual = false;
+    if ( figure1 == figure2) {
+      check = true;
+    } else if (figure1 < 0 && figure2 < 0) {
+      check = true;
+    } else if ((figure1 < 0 && figure2 == biggerLvl) || (figure2 < 0 && figure1 == biggerLvl)) {
+      check = true;
+    }
+
+    return check;
+  }
+  
+
+  
+  // Check if the game is over  
+  bool isGameOver() {
+    if (!isFullMatrix()) {
+      return false;
+    }
+
+     for (Move move in Move.values) {
+      if (_isThereAvalilableMovement(_calculateAvailability(move))) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+  bool _isThereAvalilableMovement(List<({FigureInfo figure, int availableMovement})> avaliability) {
+    for (({FigureInfo figure, int availableMovement}) aval in avaliability) {
+      if (aval.availableMovement > 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  
+  
+
+  // Others methods
+  bool isFullMatrix() => figuresPossitions.length == heightDimension * widthDimension;
+  bool _isTransicion() => (animationMovements.value > 0 && animationMovements.value < 1 || isFinish);
+  int _calcLevel(int lvl1, int lvl2) {
+    if (lvl1 <= -1 and lvl2 <= -1) {
+      // Both figures are pyramids
+      return lvl1 == lvl2 ? -1 : -2;
+    } else {
+      if (lvl1 == lvl2) {
+        // Ther aren't pyramids
+        return lvl1 + 1;
+      }
+      
+      // There is a pyramid
+      if (lvl1 == -2 || lvl2 == -2){
+        return lvl1 + lvl2 + 1 > 0 ? lvl1 + lvl2 + 1 : 1;
+      } else {
+        return lvl1.abs() + lvl2.abs();
+      }
+    }
+  }
+  int _calcBiggerLevel() {
+    return figuresPossitions.isEmpty ? 1 : figuresPossitions.map((figure) => figure.lvl).reduce(max);
+  }
+  Map<int, Map<int, FigureInfo?>> _getCurrentMatrix() {
+    Map<int, Map<int, FigureInfo?>> arrayIndexPoss = {};
+
+    int outer = heightDimension;
+    int inner = widthDimension;
+
+    for (int i = 0; i < outer; i++) {
+      // Initialize de array in null values.
+      arrayIndexPoss[i] = {};
+      for (int j = 0; j < inner; j++) {
+        arrayIndexPoss[i]![j] = null;
+      }
+    }
+
+    for (int i = 0; i < figuresPossitions.length; i++) {
+      const int indexRow = figuresPossitions[i].rowIndex;
+      const int indexColumn = figuresPossitions[i].columnIndex;
+
+      arrayIndexPoss[indexRow]![indexColumn] = figuresPossitions[i];
+    }
+
+    return arrayIndexPoss;
+  }
+  ({int rowIndex, int columnIndex}) _getRandomEmptyPossition() {
+    const Map<int, Map<int, FigureInfo?>> arrayIndexPoss = _getCurrentMatrix();
+    const List<({int rowIndex, int columnIndex})> freePosition = [];
+
+    for (int i = 0; i < heightDimension; i++) {
+      for (int j = 0; j < widthDimension; j++) {
+        if (arrayIndexPoss[i]![j] == null) {
+          freePosition.add((rowIndex: i, columnIndex: j));
+        }
+      }
+    }
+
+    const int index = Random().nextInt(freePosition.length);
+    return (
+      rowIndex: freePosition[index].rowIndex,
+      columnIndex: freePosition[index].columnIndex
+    );
+  }
+  void _cleanLevelUp() {
+    for (var element in figuresPossitions) {
+      element.levelUp = false;
+    }
+  }
+  void _updateFiguresPosition() {
+    for (int i = 0; i < figuresPossitions.length; i++) {
+      if (currentMovement == Move.down)
+        figuresPossitions[i].rowIndex += figuresPossitions[i].steps;
+      else if (currentMovement == Move.up)
+        figuresPossitions[i].rowIndex -= figuresPossitions[i].steps;
+      else if (currentMovement == Move.right)
+        figuresPossitions[i].columnIndex += figuresPossitions[i].steps;
+      else if (currentMovement == Move.left)
+        figuresPossitions[i].columnIndex -= figuresPossitions[i].steps;
+    }
+  }
+  void _onAnimationComplete() {
+   // Setting the nuews rowIndex and columnIndex of the figures
+    _updateFiguresPosition();
+
+    // Getting the new figures list after combining them
+    List<FigureInfo> combinedFigures = [];
+    Set<int> indexDuplicated = {};
+    points = 0;
+    for (int i = 0; i < figuresPossitions.length; i++) {
+      if (indexDuplicated.contains(i)) continue;
+
+      bool isCombined = false;
+
+      for (int j = i + 1; j < figuresPossitions.length; j++) {
+        if (indexDuplicated.contains(j)) continue;
+
+        if (figuresPossitions[i].isAtSamePosition(figuresPossitions[j])) {
+          isCombined = true;
+          indexDuplicated.add(j);
+
+          int upgrade = _calcLevel(figuresPossitions[i].lvl, figuresPossitions[j].lvl);
+          points += (upgrade > 0) ? upgrade * 10 : 50;
+
+          combinedFigures.add(FigureInfo(
+            id: ++serialId,
+            rowIndex: figuresPossitions[i].rowIndex,
+            columnIndex: figuresPossitions[i].columnIndex,
+            steps: 0,
+            lvl: upgrade,
+            levelUp: true,
+          ));
+
           break;
         }
       }
-    } else {
-      areEqual = false;
-    }
 
-
-    if (!areEqual) {
-      // Adding a new figure in the canvas
-      if (!isFullMatrix) {
-        __addfigure();
-      }
-      // Another figure
-      if (!isFullMatrix && Random().nextInt(100) < 15) {
-        __addfigure();
+      if (!isCombined) {
+        combinedFigures.add(figuresPossitions[i]);
       }
     }
 
+
+    biggerLvl = _calcBiggerLevel();
+    figuresPossitions = combinedFigures..sort((a, b) => a.id.compareTo(b.id));
+    _tryAddFigure();
+    isFinish = isGameOver();
+  }
+  
+
+
+
+
+  // Generate new figure to the board
+
+  void _tryAddFigure() {
+    if (!_hasStateChanged()) return;
+
+    // Adding a new figure to the board
+    if (isFullMatrix())
+      _addFigure();
+
+    // Add another figure with a 15% chance
+    if (!isFullMatrix() && Random().nextInt(100) < 15)
+      _addFigure();
+
+    // Update the last state to the current state
     lastState = figuresPossitions.map((e) => e.copyWidth()).toList();
   }
-  void __addfigure() {
-    int rm = Random().nextInt(200);
-    int lvl = 1;
-    if (rm < 5) {
-      if (rm <= 1) {
-        lvl = -1;
-      } else {
-        lvl = -2;
-      }
-    } else if (rm < 40) {
-      lvl = 2;
-    }
 
-    ({int rowIndex, int columnIndex}) poss = _getNewPoss();
+  bool _hasStateChanged() {
+    if (lastState.length != figuresPossitions.length) return true;
+
+    for (int i = 0; i < lastState.length; i++) {
+      if (lastState[i] != figuresPossitions[i]) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void _addFigure() {
+    int level = _generateRandomLevel();
+    var position = _getRandomEmptyPosition();
+
     figuresPossitions.add(FigureInfo(
       id: ++serialId,
-      rowIndex: poss.rowIndex,
-      columnIndex: poss.columnIndex,
+      rowIndex: position.rowIndex,
+      columnIndex: position.columnIndex,
       steps: 0,
-      lvl: lvl,
+      lvl: level,
     ));
+  }
+
+  int _generateRandomLevel() {
+    int randomValue = Random().nextInt(200);
+
+    if (randomValue < 5) {
+      return randomValue <= 1 ? -1 : -2; // Possitive and Nevative Pyramid with the same probability 
+    } else if (randomValue < 30) {
+      return 2; // Level 2
+    }
+    return 1; // Level 1 by default
   }
 }
